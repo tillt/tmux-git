@@ -10,21 +10,20 @@ TMUX_STATUS_LOCATION='right'
 # Status for where you are out of a repo
 TMUX_OUTREPO_STATUS=''
 
-# Function to build the status line. You need to define the $TMUX_STATUS 
+# Function to build the status line. You need to define the $TMUX_STATUS
 # variable.
 TMUX_STATUS_DEFINITION() {
-    # You can use any tmux status variables, and $GIT_BRANCH, $GIT_DIRTY, 
+    # You can use any tmux status variables, and $GIT_BRANCH, $GIT_DIRTY,
     # $GIT_FLAGS ( which is an array of flags ), and pretty much any variable
     # used in this script :-)
-    
+
     GIT_BRANCH="Git branch: $GIT_BRANCH"
-    
+
     TMUX_STATUS="$GIT_BRANCH$GIT_DIRTY"
-    
+
     if [ ${#GIT_FLAGS[@]} -gt 0 ]; then
         TMUX_STATUS="$TMUX_STATUS [$(IFS=,; echo "${GIT_FLAGS[*]}")]"
     fi
-
 }
 
 ### CONFIGURATION ENDS HERE.
@@ -66,7 +65,7 @@ find_git_dirty() {
 }
 
 find_git_stash() {
-    if [ -e "$1/.git/refs/stash" ]; then    
+    if [ -e "$1/.git/refs/stash" ]; then
         GIT_STASH='stash'
     else
         GIT_STASH=''
@@ -74,45 +73,30 @@ find_git_stash() {
 }
 
 update_tmux() {
-
-    
     # Check for tmux session
-    if [ -n "$TMUX" ]; then     
-
+    if [ -n "$TMUX" ]; then
         # This only work if the cwd is outside of the last branch
         CWD=$(readlink -e $(pwd))
-        LASTREPO_LEN=${#TMUX_GIT_LASTREPO}
-        if [ $TMUX_GIT_LASTREPO ] && [ "$TMUX_GIT_LASTREPO" = "${CWD:0:$LASTREPO_LEN}" ]; then
-            GIT_REPO=$TMUX_GIT_LASTREPO
-
+        find_git_repo
+        if [ "$GIT_REPO" ]; then
             # Get the info
             find_git_branch $GIT_REPO
             find_git_stash $GIT_REPO
             find_git_dirty
-    
+
             GIT_FLAGS=($GIT_STASH)
-            
+
             TMUX_STATUS_DEFINITION
-            
-            if [ "$GIT_DIRTY" ]; then 
+
+            if [ "$GIT_DIRTY" ]; then
                 tmux set-window-option status-$TMUX_STATUS_LOCATION-attr bright > /dev/null
             else
                 tmux set-window-option status-$TMUX_STATUS_LOCATION-attr none > /dev/null
             fi
-            
-            
-            tmux set-window-option status-$TMUX_STATUS_LOCATION "$TMUX_STATUS" > /dev/null            
 
+            tmux set-window-option status-$TMUX_STATUS_LOCATION "$TMUX_STATUS" > /dev/null
         else
-            find_git_repo
-            
-            if [ "$GIT_REPO" ]; then
-                export TMUX_GIT_LASTREPO=$GIT_REPO
-                update_tmux
-            else
-                tmux set-window-option status-$TMUX_STATUS_LOCATION "$TMUX_OUTREPO_STATUS" > /dev/null
-                            
-            fi
+            tmux set-window-option status-$TMUX_STATUS_LOCATION "$TMUX_OUTREPO_STATUS" > /dev/null
         fi
     fi
 
