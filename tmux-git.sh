@@ -10,6 +10,9 @@ TMUX_STATUS_LOCATION='right'
 # Status for where you are out of a repo
 TMUX_OUTREPO_STATUS=''
 
+TMUX_COLOR_CLEAN='#[fg=colour14]'
+TMUX_COLOR_DIRTY='#[fg=colour11]'
+
 # Function to build the status line. You need to define the $TMUX_STATUS
 # variable.
 TMUX_STATUS_DEFINITION() {
@@ -17,7 +20,7 @@ TMUX_STATUS_DEFINITION() {
     # $GIT_FLAGS ( which is an array of flags ), and pretty much any variable
     # used in this script :-)
 
-    GIT_BRANCH="Git branch: $GIT_BRANCH"
+    GIT_BRANCH="`basename $GIT_REPO` ($GIT_BRANCH)"
 
     TMUX_STATUS="$GIT_BRANCH$GIT_DIRTY"
 
@@ -34,7 +37,7 @@ find_git_repo() {
     local dir=.
     until [ "$dir" -ef / ]; do
         if [ -f "$dir/.git/HEAD" ]; then
-            GIT_REPO=`readlink -e $dir`
+            GIT_REPO=`greadlink -e $dir`
             return
         fi
         dir="../$dir"
@@ -76,7 +79,7 @@ update_tmux() {
     # Check for tmux session
     if [ -n "$TMUX" ]; then
         # This only work if the cwd is outside of the last branch
-        CWD=$(readlink -e $(pwd))
+        CWD=$(greadlink -e $(pwd))
         find_git_repo
         if [ "$GIT_REPO" ]; then
             # Get the info
@@ -90,11 +93,13 @@ update_tmux() {
 
             if [ "$GIT_DIRTY" ]; then
                 tmux set-window-option status-$TMUX_STATUS_LOCATION-attr bright > /dev/null
+	        TMUX_PREFIX="$TMUX_COLOR_DIRTY"
             else
                 tmux set-window-option status-$TMUX_STATUS_LOCATION-attr none > /dev/null
+	        TMUX_PREFIX="$TMUX_COLOR_CLEAN"
             fi
 
-            tmux set-window-option status-$TMUX_STATUS_LOCATION "$TMUX_STATUS" > /dev/null
+            tmux set-window-option status-$TMUX_STATUS_LOCATION "$TMUX_PREFIX$TMUX_STATUS" > /dev/null
         else
             tmux set-window-option status-$TMUX_STATUS_LOCATION "$TMUX_OUTREPO_STATUS" > /dev/null
         fi
