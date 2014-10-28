@@ -34,7 +34,7 @@ find_git_repo() {
     local dir=.
     until [ "$dir" -ef / ]; do
         if [ -f "$dir/.git/HEAD" ]; then
-            GIT_REPO=`readlink -e $dir`
+            GIT_REPO=`greadlink -e $dir`
             return
         fi
         dir="../$dir"
@@ -76,7 +76,7 @@ update_tmux() {
     # Check for tmux session
     if [ -n "$TMUX" ]; then
         # This only work if the cwd is outside of the last branch
-        CWD=$(readlink -e $(pwd))
+        CWD=$(greadlink -e $(pwd))
         find_git_repo
         if [ "$GIT_REPO" ]; then
             # Get the info
